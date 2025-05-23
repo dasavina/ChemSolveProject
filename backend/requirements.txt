@@ -1,0 +1,9 @@
+numpy<2
+flask
+flask_sqlalchemy
+flask-cors
+rdkit
+scikit-learn
+joblib
+pandas
+psycopg2-binary

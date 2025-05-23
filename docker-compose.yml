@@ -1,0 +1,35 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      DB_USER: chemuser
+      DB_PASSWORD: chempass
+      DB_NAME: chemsolve
+      DB_HOST: db
+      DB_PORT: 5432
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: chemsolve
+      POSTGRES_USER: chemuser
+      POSTGRES_PASSWORD: chempass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

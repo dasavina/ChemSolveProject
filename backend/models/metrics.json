@@ -1,0 +1,22 @@
+{
+  "r2_score": 0.7637,
+  "rmse": 1.1057,
+  "mae": 0.7077,
+  "feature_importance": {
+    "SLogP": 0.1736,
+    "CLogP": 0.2268,
+    "XLogP3": 0.1961,
+    "TPSA": 0.0186,
+    "ASA": 0.0678,
+    "PSA": 0.0201,
+    "HBD": 0.0106,
+    "HBA": 0.0175,
+    "NHOHCount": 0.0102,
+    "BertzCT": 0.1346,
+    "NumRings": 0.0122,
+    "NumAromaticRings": 0.0057,
+    "FractionCsp3": 0.0253,
+    "Mean_EState": 0.0475,
+    "Sum_EState": 0.0334
+  }
+}
