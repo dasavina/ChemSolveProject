@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import api from '../api';
 
 const featureNames = [
-    "SLogP", "CLogP", "XLogP3", "TPSA", "ASA", "PSA",
-    "HBD", "HBA", "NHOHCount", "BertzCT", "NumRings", "NumAromaticRings",
-    "FractionCsp3", "Mean_EState", "Sum_PartialCharges_LogP"
+  "SLogP", "CLogP", "XLogP3", "TPSA", "ASA", "PSA",
+  "HBD", "HBA", "NHOHCount", "BertzCT", "NumRings",
+  "NumAromaticRings", "FractionCsp3", "Mean_EState", "Sum_PartialCharges_LogP"
 ];
 
 const Predict: React.FC = () => {
@@ -18,9 +18,8 @@ const Predict: React.FC = () => {
     try {
       const response = await api.post('/predict', { smiles });
       setResult(response.data);
-      console.log(smiles);
     } catch (err: any) {
-      console.log(smiles);
+      console.error(err);
       setError(err.response?.data?.error || 'Prediction failed');
     }
   };
@@ -45,11 +44,13 @@ const Predict: React.FC = () => {
           <p><strong>LogS:</strong> {result.logS}</p>
           <h4>Features:</h4>
           <ul>
-            {result.features.map((val: { name: string; value: number }, idx: number) => (
-              <li key={idx}>
-                <strong>{val.name || featureNames[idx] || `Feature ${idx + 1}`}:</strong> {val.value}
-              </li>
-            ))}
+            {result.features.map((val: {name: string; value: number}, idx: number) => (
+    <li key={idx}>
+      <>
+        <strong>{val.name || featureNames[idx] || `Feature ${idx + 1}`}:</strong> {val.value}
+      </>
+    </li>
+  ))}
           </ul>
         </div>
       )}

@@ -1,16 +1,27 @@
 from io import StringIO
 import os
 from datetime import datetime
+from shelve import Shelf
+
 import joblib
 import json
 
 import pandas as pd
+import rdkit
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from rdkit import Chem
-from rdkit.Chem import Descriptors, Crippen, rdMolDescriptors
+from rdkit.Chem import Descriptors, rdMolDescriptors
+from rdkit.Chem.Crippen import MolLogP
+from rdkit.Chem.Crippen import MolMR
+from rdkit.Chem.Descriptors import MaxPartialCharge
 from rdkit.Chem.EState import EState
+from rdkit.Chem.Lipinski import NHOHCount
+from rdkit.Chem.MolSurf import TPSA
+from rdkit.Chem.rdMolDescriptors import CalcTPSA, CalcLabuteASA, CalcNumHBD, CalcNumHBA, CalcNumRings, \
+    CalcNumAromaticRings
+
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
@@ -75,32 +86,37 @@ def find_previous_files(prefix):
     return files
 
 # === Feature functions ===
+def HeavyAtomRatio(mol):
+    heavy_atoms = Descriptors.HeavyAtomCount(mol)
+    total_atoms = mol.GetNumAtoms()
+    return heavy_atoms / total_atoms if total_atoms > 0 else 0.0
 
 def featurize(smiles):
-    mol = Chem.MolFromSmiles(smiles)
+    mol = rdkit.Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
     try:
         # Розрахунок індексів та логP-внесків
         estate_indices = EState.EStateIndices(mol)
-        logp_contribs, _ = Crippen.MolLogPContribs(mol)
 
         return [
-            Crippen.MolLogP(mol),                              # SLogP
-            Descriptors.MolLogP(mol),                          # CLogP
-            Crippen.MolLogP(mol),                              # (placeholder) XLogP3
-            rdMolDescriptors.CalcTPSA(mol),                    # TPSA
-            rdMolDescriptors.CalcLabuteASA(mol),               # ASA
-            rdMolDescriptors.CalcTPSA(mol),                    # PSA (дубльовано, бо RDKit не має окремої)
-            rdMolDescriptors.CalcNumHBD(mol),                  # HBD
-            rdMolDescriptors.CalcNumHBA(mol),                  # HBA
-            Descriptors.NHOHCount(mol),                        # NHOHCount
-            Descriptors.BertzCT(mol),                          # BertzCT
-            rdMolDescriptors.CalcNumRings(mol),                # NumRings
-            Descriptors.NumAromaticRings(mol),                 # NumAromaticRings
-            Descriptors.FractionCSP3(mol),                     # FractionCsp3
-            sum(estate_indices) / len(estate_indices) if estate_indices else 0.0,  # Mean_EState
-            sum(logp_contribs)                                 # Sum_PartialCharges_LogP
+        MolLogP(mol),                              # SLogP (замінник логP)
+        MolMR(mol),                                # MolMR як поляризовність (аналог CLogP)
+        MolMR(mol),                                # дубльоване як XLogP3-заміна
+        CalcTPSA(mol),                                         # TPSA — топологічна площа поверхні
+        CalcLabuteASA(mol),                                    # ASA — аполярна площа поверхні                            # PSA — VSA по частковим зарядам
+        CalcNumHBD(mol),                                       # Кількість донорів водневих зв’язків
+        CalcNumHBA(mol),                                       # Кількість акцепторів водневих зв’язків
+        NHOHCount(mol),                            # Кількість N–H / O–H груп
+        Descriptors.BertzCT(mol),                              # Індекс складності Бертца
+        CalcNumRings(mol),                                     # Кількість кілець
+        CalcNumAromaticRings(mol),                             # Кількість ароматичних кілець
+        TPSA(mol),
+        HeavyAtomRatio(mol),
+        MaxPartialCharge(mol),
+            # Насиченість
+        sum(estate_indices) / len(estate_indices) if estate_indices else 0.0  # Середній EState
+                                    # Sum_PartialCharges_LogP
         ]
     except Exception as e:
         print(f"[❌ featurize error]: {e}")
